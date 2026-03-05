@@ -1,0 +1,41 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-card-detail{% endblock %}
+
+{% block page_content %}
+<section class="tool-card">
+    <h2>{{ card.title }}</h2>
+    <p>{{ card.description }}</p>
+    <p><strong>Category:</strong> {{ card.category }}</p>
+    <p><strong>Posted by:</strong> {{ card.owner.username|default:"Unknown" }}</p>
+    <p><strong>Created:</strong> {{ card.created_at|date:"Y-m-d H:i" }}</p>
+    <p><strong>Updated:</strong> {{ card.updated_at|date:"Y-m-d H:i" }}</p>
+    <p class="card-tags">
+        {% for tag in card.tags.all %}
+            <span class="tag">{{ tag.name }}</span>
+        {% empty %}
+            <span>No tags</span>
+        {% endfor %}
+    </p>
+    <div class="header-links">
+        <a class="inline-link" href="{% url 'index' %}">Back to Home</a>
+        {% if request.user.is_staff or card.owner_id == request.user.id %}
+            <a class="inline-link" href="{% url 'edit_card' card.id %}">Edit</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="tool-card">
+    <h2>Related Posts</h2>
+    <div class="related-list">
+        {% for item in related_cards %}
+            <a class="related-row" href="{% url 'card_detail' item.id %}">
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.category }}</span>
+            </a>
+        {% empty %}
+            <p>No related posts found.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

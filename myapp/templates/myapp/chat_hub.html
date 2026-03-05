@@ -1,0 +1,108 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-chat-hub{% endblock %}
+
+{% block page_content %}
+<section class="tools-grid">
+    <article class="tool-card">
+        <h2>Choose Friend</h2>
+        <div class="related-list">
+            {% for friend in friends_panel_items %}
+                <a
+                    class="related-row chat-friend-row {% if selected_friend and selected_friend.id == friend.id %}active{% endif %}"
+                    href="{% url 'chat_hub_page' %}?friend={{ friend.id }}"
+                >
+                    <div>
+                        <strong>{{ friend.username }}</strong>
+                        <span class="friend-state {% if friend.is_online %}online{% else %}offline{% endif %}"></span>
+                        <span class="friend-presence-text {% if friend.is_online %}online{% else %}offline{% endif %}">
+                            {% if friend.is_online %}Online{% else %}Offline{% endif %}
+                        </span>
+                        {% if friend.unread_count %}
+                            <span class="unread-dot" title="{{ friend.unread_count }} unread"></span>
+                        {% endif %}
+                    </div>
+                    <span class="inline-link">Open</span>
+                </a>
+            {% empty %}
+                <p>No friends yet. Add friends in the Friends page first.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="chat-popout {% if selected_friend %}open{% endif %}" aria-label="Chat window">
+    <header class="chat-popout-header">
+        {% if selected_friend %}
+            <div>
+                <strong>{{ selected_friend.username }}</strong>
+                <div class="chat-subtitle">Direct chat</div>
+            </div>
+            <a href="{% url 'chat_hub_page' %}" class="chat-close-btn" aria-label="Close chatbox">Close</a>
+        {% else %}
+            <div>
+                <strong>Chat</strong>
+                <div class="chat-subtitle">Select a friend to start chatting</div>
+            </div>
+        {% endif %}
+    </header>
+
+    {% if selected_friend %}
+        <div class="chat-thread">
+            {% for item in chat_messages %}
+                <div class="chat-line {% if item.sender_id == request.user.id %}mine{% else %}theirs{% endif %}">
+                    <div class="chat-bubble">
+                        <div class="chat-author">{{ item.sender.username }}</div>
+                        <p>{{ item.body }}</p>
+                        <div class="chat-meta">
+                            <div class="chat-time">
+                                {{ item.created_at|date:"Y-m-d H:i" }}
+                                {% if item.sender_id == request.user.id %}
+                                    <span
+                                        class="msg-status {% if item.read_at %}read{% elif item.delivered_at %}delivered{% else %}sent{% endif %}"
+                                        aria-label="{% if item.read_at %}Read{% elif item.delivered_at %}Delivered{% else %}Sent{% endif %}"
+                                        title="{% if item.read_at %}Read{% elif item.delivered_at %}Delivered{% else %}Sent{% endif %}"
+                                    >
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="chat-meta-actions">
+                                {% if item.sender_id == request.user.id %}
+                                    <form method="post" action="{% url 'delete_chat_message' item.id %}" class="inline-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="scope" value="for_me">
+                                        <button type="submit" class="chat-delete-btn">Delete for me</button>
+                                    </form>
+                                    <form method="post" action="{% url 'delete_chat_message' item.id %}" class="inline-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="scope" value="for_all">
+                                        <button type="submit" class="chat-delete-btn danger">Delete for all</button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'delete_chat_message' item.id %}" class="inline-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="scope" value="for_me">
+                                        <button type="submit" class="chat-delete-btn">Delete for me</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="friend-empty">No messages yet. Start the conversation.</p>
+            {% endfor %}
+        </div>
+        <form method="post" class="stack-form chat-send-form">
+            {% csrf_token %}
+            <input type="hidden" name="friend_id" value="{{ selected_friend.id }}">
+            <textarea name="message" rows="3" maxlength="1000" placeholder="Type a message..." required></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    {% else %}
+        <div class="chat-empty-state">
+            Pick a friend from the list to open the chat window.
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

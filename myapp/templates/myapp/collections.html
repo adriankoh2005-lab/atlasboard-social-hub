@@ -1,0 +1,43 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-collections{% endblock %}
+
+{% block page_content %}
+<section class="search-sort">
+    <form method="get" class="filters-form">
+        <input type="text" name="q" placeholder="Search collections..." value="{{ query }}">
+        <input type="date" name="date_from" value="{{ date_from }}" aria-label="Date from">
+        <input type="date" name="date_to" value="{{ date_to }}" aria-label="Date to">
+        <button type="submit">Search</button>
+        {% if query or date_from or date_to %}
+            <a href="{% url 'collections_page' %}" class="clear-link">Clear</a>
+        {% endif %}
+    </form>
+</section>
+
+<section class="cards" aria-label="Collection cards">
+    {% for card in cards %}
+        <article class="card">
+            <h3><a class="inline-link" href="{% url 'card_detail' card.id %}">{{ card.title }}</a></h3>
+            <p>{{ card.description }}</p>
+            <p><strong>Category:</strong> {{ card.category }}</p>
+            {% if friends_panel_items %}
+                <form method="post" action="{% url 'share_card_to_chat' card.id %}" class="share-inline-form">
+                    {% csrf_token %}
+                    <select name="friend_id" required>
+                        <option value="">Share to chat...</option>
+                        {% for friend in friends_panel_items %}
+                            <option value="{{ friend.id }}">{{ friend.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="link-button">Share</button>
+                </form>
+            {% else %}
+                <p class="share-hint">Add friends to share posts in chat.</p>
+            {% endif %}
+        </article>
+    {% empty %}
+        <p>No cards found.</p>
+    {% endfor %}
+</section>
+{% endblock %}

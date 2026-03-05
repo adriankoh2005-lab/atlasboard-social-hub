@@ -1,0 +1,17 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-generic{% endblock %}
+
+{% block page_content %}
+<section class="tool-card">
+    <h2>Edit Post</h2>
+    <form method="post" class="stack-form{% if request.user.is_staff %} admin-editable-form{% endif %}">
+        {% csrf_token %}
+        <input type="text" name="title" value="{{ form.title.value|default_if_none:'' }}" maxlength="100" required>
+        <textarea name="description" rows="4" maxlength="1000" required>{{ form.description.value|default_if_none:'' }}</textarea>
+        <input type="text" name="category" value="{{ form.category.value|default_if_none:'' }}" maxlength="50" required>
+        <input type="text" name="tags" value="{{ form.tags.value|default_if_none:'' }}" placeholder="Tags (comma-separated)">
+        <button type="submit">Save Post</button>
+    </form>
+</section>
+{% endblock %}

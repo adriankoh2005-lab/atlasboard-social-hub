@@ -1,0 +1,26 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-profile{% endblock %}
+
+{% block page_content %}
+<section class="tool-card">
+    <h2>Update Profile</h2>
+    <form method="post" class="stack-form{% if request.user.is_staff %} admin-editable-form{% endif %}">
+        {% csrf_token %}
+        <input type="text" name="display_name" value="{{ display_name }}" maxlength="50" required>
+        <button type="submit">Save Profile</button>
+    </form>
+</section>
+
+<section class="tool-card">
+    <h2>Profile Details</h2>
+    <div class="info-grid">
+        {% for label, value in info_rows %}
+            <div class="info-row">
+                <strong>{{ label }}</strong>
+                <span>{{ value }}</span>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

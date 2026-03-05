@@ -1,0 +1,31 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-favorites{% endblock %}
+
+{% block page_content %}
+<section class="cards" aria-label="Favorite cards">
+    {% for card in cards %}
+        <article class="card">
+            <h3><a class="inline-link" href="{% url 'card_detail' card.id %}">{{ card.title }}</a></h3>
+            <p>{{ card.description }}</p>
+            <p><strong>Category:</strong> {{ card.category }}</p>
+            {% if friends_panel_items %}
+                <form method="post" action="{% url 'share_card_to_chat' card.id %}" class="share-inline-form">
+                    {% csrf_token %}
+                    <select name="friend_id" required>
+                        <option value="">Share to chat...</option>
+                        {% for friend in friends_panel_items %}
+                            <option value="{{ friend.id }}">{{ friend.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="link-button">Share</button>
+                </form>
+            {% else %}
+                <p class="share-hint">Add friends to share posts in chat.</p>
+            {% endif %}
+        </article>
+    {% empty %}
+        <p>No favourite cards yet. Add a card with category "Favourites" or tag "Favourites".</p>
+    {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,314 @@
+﻿{% load static %}
+{% load url_helpers %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtlasBoard</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'myapp/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'myapp/style.css' %}">
+</head>
+<body
+    class="app-body theme-{{ ui_theme_mode|default:'light' }} page-home home-card-edit-off"
+    data-is-admin="{% if request.user.is_staff %}1{% else %}0{% endif %}"
+    data-current-user="{{ request.user.username }}"
+    data-authenticated="1"
+    data-session-seed="{% if session_seed %}1{% else %}0{% endif %}"
+    data-force-logout-url="{% url 'logout_page' %}"
+    data-theme-set-url="{% url 'set_theme_mode' %}"
+>
+    <button
+        class="hamburger"
+        id="sidebarToggle"
+        type="button"
+        aria-controls="sidebar"
+        aria-expanded="false"
+        aria-label="Toggle sidebar"
+    >
+        &#9776;
+    </button>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+
+    <div class="container">
+        <aside class="sidebar" id="sidebar">
+            <h2>Sidebar Items</h2>
+            <ul>
+                {% for item in sidebar_items %}
+                    {% sidebar_item_url item as item_url %}
+                    <li>
+                        <a
+                            class="sidebar-item-link {% if item.name|lower == current_section %}active{% endif %}"
+                            href="{{ item_url }}"
+                        >
+                            {{ item.name }}
+                            {% if item.name|lower == 'chat' and chat_unread_total %}
+                                <span class="nav-unread-dot" title="{{ chat_unread_total }} unread"></span>
+                            {% endif %}
+                        </a>
+                    </li>
+                {% empty %}
+                    <li>No items yet.</li>
+                {% endfor %}
+            </ul>
+            {% if request.user.is_staff %}
+                <a class="sidebar-nav-btn" href="{% url 'sidebar_items_page' %}">Open Sidebar Manager</a>
+            {% endif %}
+
+            <h3>Tags</h3>
+            <div class="tag-list">
+                {% for tag in tags %}
+                    {% build_tag_url tag.id tag_filters search_query sort_by date_from date_to as tag_url %}
+                    <a href="{{ tag_url }}" class="tag {% if tag.id|stringformat:'s' in tag_filters %}selected{% endif %}">
+                        {{ tag.name }}
+                    </a>
+                {% empty %}
+                    <span>No tags yet.</span>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <main class="main surface-panel">
+            <header class="page-header">
+                <h1>Home Feed</h1>
+                <div class="header-links">
+                    <span class="user-chip">{{ request.user.username }}</span>
+                    {% if request.user.is_staff %}
+                        <a class="inline-link" href="{% url 'admin_center_page' %}">Admin Center</a>
+                    {% endif %}
+                    <form method="post" action="{% url 'logout_page' %}" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="link-button">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            <section class="home-hero">
+                <h1>AtlasBoard Control Hub</h1>
+                <p>Manage cards, tags, filters, and imports from one workspace.</p>
+                <div class="hero-metrics">
+                    <div class="metric">
+                        <span class="metric-value">{{ cards|length }}</span>
+                        <span class="metric-label">Visible Cards</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">{{ sidebar_items|length }}</span>
+                        <span class="metric-label">Sidebar Items</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">{{ tags|length }}</span>
+                        <span class="metric-label">Available Tags</span>
+                    </div>
+                </div>
+            </section>
+
+            {% if messages %}
+                <ul class="flash-list">
+                    {% for message in messages %}
+                        <li class="flash flash-{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <section class="tools-panel" aria-label="Quick Tools">
+                <h2>Quick Tools</h2>
+                <div class="tools-grid">
+                    <article class="tool-card">
+                        <h3>Create Post</h3>
+                        <form method="post" action="{% url 'add_card' %}" class="stack-form{% if request.user.is_staff %} admin-editable-form{% endif %}">
+                            {% csrf_token %}
+                            <input type="text" name="title" maxlength="100" placeholder="Title" required>
+                            <textarea name="description" rows="3" maxlength="1000" placeholder="Description" required></textarea>
+                            <input type="text" name="category" maxlength="50" placeholder="Category" required>
+                            <input type="text" name="tags" placeholder="Tags (comma-separated)">
+                            <button type="submit">Post</button>
+                        </form>
+                    </article>
+
+                    {% if request.user.is_staff %}
+                        <article class="tool-card">
+                            <h3>Import / Export</h3>
+                            <p>
+                                <a class="inline-link" href="{% url 'export_cards_json' %}" target="_blank" rel="noopener">
+                                    Open card data JSON
+                                </a>
+                            </p>
+                            <form
+                                method="post"
+                                action="{% url 'import_cards_json' %}"
+                                class="stack-form admin-editable-form"
+                                onsubmit="return !this.replace_existing.checked || confirm('Replace all existing cards? This cannot be undone.');"
+                            >
+                                {% csrf_token %}
+                                <textarea
+                                    name="payload"
+                                    rows="6"
+                                    placeholder='Paste JSON list or {"cards":[...]}'
+                                    required
+                                ></textarea>
+                                <label class="checkbox-line">
+                                    <input type="checkbox" name="replace_existing">
+                                    Replace existing cards
+                                </label>
+                                <button type="submit">Import JSON</button>
+                            </form>
+                        </article>
+                    {% endif %}
+                </div>
+            </section>
+
+            <div class="search-sort">
+                <div class="search-sort-row">
+                    <form method="get" class="filters-form">
+                        <input type="text" name="search" placeholder="Search..." value="{{ search_query }}">
+                        <select name="sort">
+                            <option value="newest" {% if sort_by == "newest" %}selected{% endif %}>Newest</option>
+                            <option value="title" {% if sort_by == "title" %}selected{% endif %}>Title</option>
+                            <option value="category" {% if sort_by == "category" %}selected{% endif %}>Category</option>
+                        </select>
+                        <input type="date" name="date_from" value="{{ date_from }}" aria-label="Date from">
+                        <input type="date" name="date_to" value="{{ date_to }}" aria-label="Date to">
+                        {% for tid in tag_filters %}
+                            <input type="hidden" name="tag" value="{{ tid }}">
+                        {% endfor %}
+                        <button type="submit">Search</button>
+                        {% if search_query or tag_filters or sort_by != "newest" or date_from or date_to %}
+                            <a href="{% url 'index' %}" class="clear-link">Clear Filters</a>
+                        {% endif %}
+                    </form>
+                    <div class="home-edit-toggle" id="homeCardEditToggleWrap">
+                        <label class="toggle-line" for="homeCardEditToggle">
+                            <input type="checkbox" id="homeCardEditToggle">
+                            <span>Edit Cards</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <section class="cards" aria-label="Cards">
+                {% for card in cards %}
+                    <article class="card">
+                        <h3><a class="inline-link" href="{% url 'card_detail' card.id %}">{{ card.title }}</a></h3>
+                        <div class="home-card-static">
+                            <p>{{ card.description }}</p>
+                            <p><strong>Category:</strong> {{ card.category }}</p>
+                        </div>
+                        <p><strong>Posted by:</strong> {{ card.owner.username|default:"Unknown" }}</p>
+                        <p class="card-tags">
+                            {% for tag in card.tags.all %}
+                                <span class="tag">{{ tag.name }}</span>
+                            {% empty %}
+                                <span>No tags</span>
+                            {% endfor %}
+                        </p>
+                        {% if friends_panel_items %}
+                            <form method="post" action="{% url 'share_card_to_chat' card.id %}" class="share-inline-form">
+                                {% csrf_token %}
+                                <select name="friend_id" required>
+                                    <option value="">Share to chat...</option>
+                                    {% for friend in friends_panel_items %}
+                                        <option value="{{ friend.id }}">{{ friend.username }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="link-button">Share</button>
+                            </form>
+                        {% else %}
+                            <p class="share-hint">Add friends to share posts in chat.</p>
+                        {% endif %}
+                        {% if request.user.is_staff or card.owner_id == request.user.id %}
+                            <form method="post" action="{% url 'edit_card' card.id %}" class="stack-form home-card-edit-form home-edit-only" data-home-edit-form>
+                                {% csrf_token %}
+                                <input type="text" name="title" maxlength="100" value="{{ card.title }}" required>
+                                <textarea name="description" rows="3" maxlength="1000" required>{{ card.description }}</textarea>
+                                <input type="text" name="category" maxlength="50" value="{{ card.category }}" required>
+                                <input
+                                    type="text"
+                                    name="tags"
+                                    value="{% for tag in card.tags.all %}{% if not forloop.first %}, {% endif %}{{ tag.name }}{% endfor %}"
+                                    placeholder="Tags (comma-separated)"
+                                >
+                                <button type="submit">Save</button>
+                            </form>
+                            <div class="card-actions home-edit-only">
+                                <a class="inline-link" href="{% url 'edit_card' card.id %}">Open full editor</a>
+                                <form method="post" action="{% url 'delete_card' card.id %}" class="inline-form" onsubmit="return confirm('Delete this post?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="link-button danger">Delete</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </article>
+                {% empty %}
+                    <p>No cards found.</p>
+                {% endfor %}
+            </section>
+        </main>
+
+        <div class="right-rail">
+            <aside class="friends-sidebar surface-panel" aria-label="Friends">
+                <h2>Friends</h2>
+                <form method="post" action="{% url 'add_friend' %}" class="stack-form friends-add-form">
+                    {% csrf_token %}
+                    <input type="text" name="username" placeholder="Add friend by username" required>
+                    <button type="submit">Add</button>
+                </form>
+                <div class="friends-list">
+                    {% for friend in friends_panel_items %}
+                        <div class="friend-row">
+                            <span class="friend-state {% if friend.is_online %}online{% else %}offline{% endif %}"></span>
+                            <span class="friend-name">{{ friend.username }}</span>
+                            <span class="friend-presence-text {% if friend.is_online %}online{% else %}offline{% endif %}">
+                                {% if friend.is_online %}Online{% else %}Offline{% endif %}
+                            </span>
+                            {% if friend.unread_count %}
+                                <span class="unread-dot" title="{{ friend.unread_count }} unread"></span>
+                            {% endif %}
+                            <a class="friend-chat-btn" href="{% url 'chat_page' friend.id %}">
+                                <img src="{% static 'myapp/chat-icon.svg' %}" alt="" aria-hidden="true">
+                                <span>Chat</span>
+                            </a>
+                        </div>
+                    {% empty %}
+                        <p class="friend-empty">No friends added yet.</p>
+                    {% endfor %}
+                </div>
+            </aside>
+            <div class="theme-rail-tool">
+                <button type="button" class="theme-quick-btn" data-theme-quick-toggle>Dark Mode: Off</button>
+            </div>
+        </div>
+    </div>
+    <div class="ai-floating-tool">
+        <button
+            type="button"
+            class="ai-quick-btn"
+            id="aiHelperLauncher"
+            aria-label="Open AI Helper"
+            aria-controls="aiHelperWidget"
+            aria-expanded="false"
+        >
+            <img src="{% static 'myapp/ai-icon.svg' %}" alt="" aria-hidden="true">
+        </button>
+    </div>
+
+    <section id="aiHelperWidget" class="chat-popout ai-chat-popout" aria-label="AI chat window" hidden>
+        <header class="chat-popout-header">
+            <div>
+                <strong>AI Helper</strong>
+                <div class="chat-subtitle">Ask about pages, filters, chat, or settings</div>
+            </div>
+            <button type="button" class="chat-close-btn" id="aiHelperClose" aria-label="Close AI chatbox">Close</button>
+        </header>
+
+        <div id="aiHelperThread" class="chat-thread" aria-live="polite"></div>
+        <form id="aiHelperForm" method="post" action="{% url 'ai_helper_reply' %}" class="stack-form chat-send-form">
+            {% csrf_token %}
+            <textarea name="message" rows="3" maxlength="1200" placeholder="Ask anything about this app..." required></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    </section>
+
+    <script src="{% static 'myapp/script.js' %}" defer></script>
+</body>
+</html>

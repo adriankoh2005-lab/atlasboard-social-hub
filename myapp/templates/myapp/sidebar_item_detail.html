@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidebar Item Detail</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'myapp/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'myapp/style.css' %}">
+</head>
+<body
+    class="app-body page-sidebar-detail"
+    data-is-admin="1"
+    data-authenticated="1"
+    data-session-seed="{% if session_seed %}1{% else %}0{% endif %}"
+    data-force-logout-url="{% url 'logout_page' %}"
+>
+    <main class="page-shell">
+        <header class="page-header">
+            <h1>Sidebar Item: {{ item.name }}</h1>
+            <div class="header-links">
+                <div class="admin-edit-toggle" id="pageAdminToggleWrap" hidden>
+                    <label class="toggle-line" for="adminEditToggle">
+                        <input type="checkbox" id="adminEditToggle">
+                        <span>Edit Mode</span>
+                    </label>
+                </div>
+                <a class="inline-link" href="{% url 'sidebar_items_page' %}">Back to Sidebar Manager</a>
+                <a class="inline-link" href="{% url 'index' %}">Back to Home</a>
+            </div>
+        </header>
+
+        {% if messages %}
+            <ul class="flash-list">
+                {% for message in messages %}
+                    <li class="flash flash-{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <section class="manager-grid">
+            <article class="tool-card">
+                <h2>Edit Item</h2>
+                <form method="post" action="{% url 'sidebar_item_update' item.id %}" class="stack-form admin-editable-form">
+                    {% csrf_token %}
+                    <input type="text" name="name" value="{{ item.name }}" maxlength="50" required>
+                    <button type="submit">Save Changes</button>
+                </form>
+                <form
+                    method="post"
+                    action="{% url 'sidebar_item_delete' item.id %}"
+                    class="stack-form admin-edit-only"
+                    onsubmit="return confirm('Delete this sidebar item?');"
+                >
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger">Delete Item</button>
+                </form>
+            </article>
+
+            <article class="tool-card">
+                <h2>Related Cards</h2>
+                <p>Cards with category matching this sidebar item name.</p>
+                <div class="related-list">
+                    {% for card in related_cards %}
+                        <div class="related-row">
+                            <strong>{{ card.title }}</strong>
+                            <span>{{ card.category }}</span>
+                        </div>
+                    {% empty %}
+                        <p>No related cards yet.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+    </main>
+    <script src="{% static 'myapp/script.js' %}" defer></script>
+</body>
+</html>

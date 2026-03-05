@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AtlasBoard</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'myapp/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'myapp/style.css' %}">
+</head>
+<body
+    class="app-body theme-{{ ui_theme_mode|default:'light' }} page-auth page-auth-soft"
+    data-theme-set-url="{% url 'set_theme_mode' %}"
+>
+    <main class="auth-shell">
+        <section class="auth-card">
+            <h1>Welcome Back</h1>
+            <p>Sign in to access AtlasBoard.</p>
+
+            {% if messages %}
+                <ul class="flash-list">
+                    {% for message in messages %}
+                        <li class="flash flash-{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <form method="post" class="stack-form" autocomplete="on">
+                {% csrf_token %}
+                <input
+                    id="loginUsername"
+                    type="text"
+                    name="username"
+                    placeholder="Username"
+                    autocomplete="username"
+                    {% if remembered_usernames %}list="rememberedUsernames"{% endif %}
+                    required
+                    autofocus
+                >
+                <input id="loginPassword" type="password" name="password" placeholder="Password" autocomplete="current-password" required>
+                <label class="checkbox-line">
+                    <input type="checkbox" name="remember_me">
+                    Remember me
+                </label>
+                <button type="submit">Login</button>
+            </form>
+            {% if remembered_usernames %}
+                <datalist id="rememberedUsernames">
+                    {% for remembered_username in remembered_usernames %}
+                        <option value="{{ remembered_username }}"></option>
+                    {% endfor %}
+                </datalist>
+            {% endif %}
+            <p class="auth-foot">No account yet? <a class="inline-link" href="{% url 'register_page' %}">Register</a></p>
+        </section>
+    </main>
+    <div class="theme-floating-tool">
+        <button type="button" class="theme-quick-btn" data-theme-quick-toggle>Dark Mode: Off</button>
+    </div>
+    <script src="{% static 'myapp/script.js' %}" defer></script>
+</body>
+</html>

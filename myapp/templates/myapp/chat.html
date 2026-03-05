@@ -1,0 +1,27 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-chat{% endblock %}
+
+{% block page_content %}
+<section class="tool-card chat-card">
+    <h2>Conversation with {{ friend.username }}</h2>
+    <div class="chat-thread">
+        {% for item in chat_messages %}
+            <div class="chat-line {% if item.sender_id == request.user.id %}mine{% else %}theirs{% endif %}">
+                <div class="chat-bubble">
+                    <div class="chat-author">{{ item.sender.username }}</div>
+                    <p>{{ item.body }}</p>
+                    <div class="chat-time">{{ item.created_at|date:"Y-m-d H:i" }}</div>
+                </div>
+            </div>
+        {% empty %}
+            <p class="friend-empty">No messages yet. Start the conversation.</p>
+        {% endfor %}
+    </div>
+    <form method="post" class="stack-form chat-send-form">
+        {% csrf_token %}
+        <textarea name="message" rows="3" maxlength="1000" placeholder="Type a message..." required></textarea>
+        <button type="submit">Send Message</button>
+    </form>
+</section>
+{% endblock %}

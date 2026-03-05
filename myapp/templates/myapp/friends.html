@@ -1,0 +1,82 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+{% load static %}
+
+{% block body_class %}page-friends{% endblock %}
+
+{% block page_content %}
+<section class="tool-card">
+    <div class="section-header-row">
+        <h2>Friends Edit Mode</h2>
+        <label class="toggle-line" for="friendsEditToggle">
+            <input type="checkbox" id="friendsEditToggle">
+            <span>Edit Friends</span>
+        </label>
+    </div>
+    <p>Turn this on to add or remove friends on this page.</p>
+</section>
+
+<section class="tools-grid">
+    <article class="tool-card">
+        <h2>Add Friend</h2>
+        <form method="post" action="{% url 'add_friend' %}" class="stack-form friend-editable-form">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Username" required>
+            <button type="submit" class="friend-edit-only">Add Friend</button>
+        </form>
+    </article>
+
+    <article class="tool-card">
+        <h2>Find People</h2>
+        <form method="get" class="filters-form">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search username...">
+            <button type="submit">Search</button>
+            {% if query %}
+                <a href="{% url 'friends_page' %}" class="clear-link">Clear</a>
+            {% endif %}
+        </form>
+        <div class="related-list">
+            {% for user_obj in people %}
+                <div class="related-row">
+                    <strong>{{ user_obj.username }}</strong>
+                    <form method="post" action="{% url 'add_friend' %}" class="inline-form friend-editable-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="username" value="{{ user_obj.username }}">
+                        <button type="submit" class="link-button friend-edit-only">Add</button>
+                    </form>
+                </div>
+            {% empty %}
+                <p>No users found.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="tool-card">
+    <h2>My Friends</h2>
+    <div class="related-list">
+        {% for friend in friends %}
+            <div class="related-row">
+                <div>
+                    <strong>{{ friend.username }}</strong>
+                    <span class="friend-state {% if friend.presence.is_online %}online{% else %}offline{% endif %}"></span>
+                    <span class="friend-presence-text {% if friend.presence.is_online %}online{% else %}offline{% endif %}">
+                        {% if friend.presence.is_online %}Online{% else %}Offline{% endif %}
+                    </span>
+                </div>
+                <div class="header-links">
+                    <a class="friend-chat-btn" href="{% url 'chat_page' friend.id %}">
+                        <img src="{% static 'myapp/chat-icon.svg' %}" alt="" aria-hidden="true">
+                        <span>Chat</span>
+                    </a>
+                    <form method="post" action="{% url 'remove_friend' friend.id %}" class="inline-form friend-editable-form">
+                        {% csrf_token %}
+                        <button type="submit" class="link-button danger friend-edit-only">Remove</button>
+                    </form>
+                </div>
+            </div>
+        {% empty %}
+            <p>No friends yet.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

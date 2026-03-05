@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - AtlasBoard</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'myapp/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'myapp/style.css' %}">
+</head>
+<body
+    class="app-body theme-{{ ui_theme_mode|default:'light' }} page-auth page-auth-soft"
+    data-theme-set-url="{% url 'set_theme_mode' %}"
+>
+    <main class="auth-shell">
+        <section class="auth-card">
+            <h1>Create Account</h1>
+            <p>Join AtlasBoard to start posting and exploring content.</p>
+
+            {% if form.errors %}
+                <ul class="flash-list">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li class="flash flash-error">{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <form method="post" class="stack-form">
+                {% csrf_token %}
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="email" name="email" placeholder="Email (optional)">
+                <input type="password" name="password1" placeholder="Password" required>
+                <input type="password" name="password2" placeholder="Confirm password" required>
+                <button type="submit">Create Account</button>
+            </form>
+            <p class="auth-foot">Already have an account? <a class="inline-link" href="{% url 'login_page' %}">Login</a></p>
+        </section>
+    </main>
+    <div class="theme-floating-tool">
+        <button type="button" class="theme-quick-btn" data-theme-quick-toggle>Dark Mode: Off</button>
+    </div>
+    <script src="{% static 'myapp/script.js' %}" defer></script>
+</body>
+</html>

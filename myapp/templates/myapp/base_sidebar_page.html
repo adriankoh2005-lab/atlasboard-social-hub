@@ -1,0 +1,159 @@
+{% load static %}
+{% load url_helpers %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - AtlasBoard</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'myapp/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'myapp/style.css' %}">
+</head>
+<body
+    class="app-body theme-{{ ui_theme_mode|default:'light' }} {% block body_class %}page-generic{% endblock %}"
+    data-is-admin="{% if request.user.is_staff %}1{% else %}0{% endif %}"
+    data-current-user="{{ request.user.username }}"
+    data-authenticated="1"
+    data-session-seed="{% if session_seed %}1{% else %}0{% endif %}"
+    data-force-logout-url="{% url 'logout_page' %}"
+    data-theme-set-url="{% url 'set_theme_mode' %}"
+>
+    <button
+        class="hamburger"
+        id="sidebarToggle"
+        type="button"
+        aria-controls="sidebar"
+        aria-expanded="false"
+        aria-label="Toggle sidebar"
+    >
+        &#9776;
+    </button>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+
+    <div class="container">
+        <aside class="sidebar" id="sidebar">
+            <h2>Sidebar Items</h2>
+            <ul>
+                {% for item in sidebar_items %}
+                    {% sidebar_item_url item as item_url %}
+                    <li>
+                        <a
+                            class="sidebar-item-link {% if item.name|lower == current_section %}active{% endif %}"
+                            href="{{ item_url }}"
+                        >
+                            {{ item.name }}
+                            {% if item.name|lower == 'chat' and chat_unread_total %}
+                                <span class="nav-unread-dot" title="{{ chat_unread_total }} unread"></span>
+                            {% endif %}
+                        </a>
+                    </li>
+                {% empty %}
+                    <li>No items yet.</li>
+                {% endfor %}
+            </ul>
+            {% if request.user.is_staff %}
+                <a class="sidebar-nav-btn" href="{% url 'sidebar_items_page' %}">Open Sidebar Manager</a>
+            {% endif %}
+        </aside>
+
+        <main class="main surface-panel">
+            <header class="page-header">
+                <h1>{{ page_title }}</h1>
+                <div class="header-links">
+                    {% if request.user.is_staff and show_page_edit_toggle != False %}
+                        <div class="admin-edit-toggle" id="pageAdminToggleWrap">
+                            <label class="toggle-line" for="adminEditToggle">
+                                <input type="checkbox" id="adminEditToggle">
+                                <span>Edit Mode</span>
+                            </label>
+                        </div>
+                    {% endif %}
+                    <a class="inline-link" href="{% url 'index' %}">Back to Home</a>
+                    <span class="user-chip">{{ request.user.username }}</span>
+                    <form method="post" action="{% url 'logout_page' %}" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="link-button">Logout</button>
+                    </form>
+                </div>
+            </header>
+            <p class="page-subtitle">{{ page_description }}</p>
+
+            {% if messages %}
+                <ul class="flash-list">
+                    {% for message in messages %}
+                        <li class="flash flash-{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% block page_content %}{% endblock %}
+        </main>
+
+        <div class="right-rail">
+            <aside class="friends-sidebar surface-panel" aria-label="Friends">
+                <h2>Friends</h2>
+                <form method="post" action="{% url 'add_friend' %}" class="stack-form friends-add-form">
+                    {% csrf_token %}
+                    <input type="text" name="username" placeholder="Add friend by username" required>
+                    <button type="submit">Add</button>
+                </form>
+                <div class="friends-list">
+                    {% for friend in friends_panel_items %}
+                        <div class="friend-row">
+                            <span class="friend-state {% if friend.is_online %}online{% else %}offline{% endif %}"></span>
+                            <span class="friend-name">{{ friend.username }}</span>
+                            <span class="friend-presence-text {% if friend.is_online %}online{% else %}offline{% endif %}">
+                                {% if friend.is_online %}Online{% else %}Offline{% endif %}
+                            </span>
+                            {% if friend.unread_count %}
+                                <span class="unread-dot" title="{{ friend.unread_count }} unread"></span>
+                            {% endif %}
+                            <a class="friend-chat-btn" href="{% url 'chat_page' friend.id %}">
+                                <img src="{% static 'myapp/chat-icon.svg' %}" alt="" aria-hidden="true">
+                                <span>Chat</span>
+                            </a>
+                        </div>
+                    {% empty %}
+                        <p class="friend-empty">No friends added yet.</p>
+                    {% endfor %}
+                </div>
+            </aside>
+            <div class="theme-rail-tool">
+                <button type="button" class="theme-quick-btn" data-theme-quick-toggle>Dark Mode: Off</button>
+            </div>
+        </div>
+    </div>
+    <div class="ai-floating-tool">
+        <button
+            type="button"
+            class="ai-quick-btn"
+            id="aiHelperLauncher"
+            aria-label="Open AI Helper"
+            aria-controls="aiHelperWidget"
+            aria-expanded="false"
+        >
+            <img src="{% static 'myapp/ai-icon.svg' %}" alt="" aria-hidden="true">
+        </button>
+    </div>
+
+    <section id="aiHelperWidget" class="chat-popout ai-chat-popout" aria-label="AI chat window" hidden>
+        <header class="chat-popout-header">
+            <div>
+                <strong>AI Helper</strong>
+                <div class="chat-subtitle">Ask about pages, filters, chat, or settings</div>
+            </div>
+            <button type="button" class="chat-close-btn" id="aiHelperClose" aria-label="Close AI chatbox">Close</button>
+        </header>
+
+        <div id="aiHelperThread" class="chat-thread" aria-live="polite"></div>
+        <form id="aiHelperForm" method="post" action="{% url 'ai_helper_reply' %}" class="stack-form chat-send-form">
+            {% csrf_token %}
+            <textarea name="message" rows="3" maxlength="1200" placeholder="Ask anything about this app..." required></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    </section>
+
+    <script src="{% static 'myapp/script.js' %}" defer></script>
+</body>
+</html>

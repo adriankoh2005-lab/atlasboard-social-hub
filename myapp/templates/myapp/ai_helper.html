@@ -1,0 +1,22 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-ai-helper{% endblock %}
+
+{% block page_content %}
+<section class="tool-card">
+    <h2>AI Helper</h2>
+    <p>Use the floating AI chatbox at the bottom-right corner. It stays open across pages until you press Close.</p>
+    <button type="button" class="sidebar-nav-btn" data-open-ai-helper>Open AI Chatbox</button>
+</section>
+
+<section class="tool-card">
+    <h2>Try These Prompts</h2>
+    <div class="related-list">
+        <div class="related-row">Hi</div>
+        <div class="related-row">Where is settings?</div>
+        <div class="related-row">Open dashboard</div>
+        <div class="related-row">How to filter by date?</div>
+        <div class="related-row">How does remember me work?</div>
+    </div>
+</section>
+{% endblock %}

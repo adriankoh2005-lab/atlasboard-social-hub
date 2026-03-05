@@ -1,0 +1,19 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-reports{% endblock %}
+
+{% block page_content %}
+<section class="tool-card">
+    <h2>Category Totals</h2>
+    <div class="info-grid">
+        {% for row in report_rows %}
+            <div class="info-row">
+                <strong>{{ row.category|default:'Uncategorized' }}</strong>
+                <span>{{ row.total }}</span>
+            </div>
+        {% empty %}
+            <p>No report data available.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

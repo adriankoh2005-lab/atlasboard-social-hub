@@ -1,0 +1,40 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-settings{% endblock %}
+
+{% block page_content %}
+<section class="tool-card">
+    <h2>App Preferences</h2>
+    <form method="post" class="stack-form{% if request.user.is_staff %} admin-editable-form{% endif %}">
+        {% csrf_token %}
+        <label for="default_sort">Default sort</label>
+        <select id="default_sort" name="default_sort">
+            <option value="newest" {% if default_sort == 'newest' %}selected{% endif %}>Newest</option>
+            <option value="title" {% if default_sort == 'title' %}selected{% endif %}>Title</option>
+            <option value="category" {% if default_sort == 'category' %}selected{% endif %}>Category</option>
+        </select>
+        <label for="theme_mode">Theme</label>
+        <select id="theme_mode" name="theme_mode">
+            <option value="light" {% if theme_mode == 'light' %}selected{% endif %}>Light</option>
+            <option value="dark" {% if theme_mode == 'dark' %}selected{% endif %}>Dark</option>
+        </select>
+        <label class="checkbox-line">
+            <input type="checkbox" name="sidebar_tips" {% if sidebar_tips %}checked{% endif %}>
+            Show sidebar tips
+        </label>
+        <button type="submit">Save Settings</button>
+    </form>
+</section>
+
+<section class="tool-card">
+    <h2>Current Settings Snapshot</h2>
+    <div class="info-grid">
+        {% for label, value in info_rows %}
+            <div class="info-row">
+                <strong>{{ label }}</strong>
+                <span>{{ value }}</span>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

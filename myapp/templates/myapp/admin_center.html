@@ -1,0 +1,170 @@
+{% extends 'myapp/base_sidebar_page.html' %}
+
+{% block body_class %}page-admin-center{% endblock %}
+
+{% block page_content %}
+<div id="adminCenterRoot">
+<section class="tools-grid">
+    <article class="tool-card admin-editable-block">
+        <h2>Add User</h2>
+        <p>Create users directly here.</p>
+        <form method="post" action="{% url 'admin_create_user' %}" class="stack-form">
+            {% csrf_token %}
+            <input type="text" name="username" maxlength="150" placeholder="Username" required>
+            <input type="text" name="password" maxlength="128" placeholder="Password" required>
+            <select name="role">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+            </select>
+            <button type="submit">Create User</button>
+        </form>
+    </article>
+</section>
+
+<section class="tool-card">
+    <div class="section-header-row">
+        <h2>User Management</h2>
+        <div class="section-header-actions">
+            <button type="button" class="table-btn admin-group-save-btn" data-admin-group-save="users">Save</button>
+            <label class="toggle-line" for="usersEditToggle">
+                <input type="checkbox" id="usersEditToggle" data-admin-group-toggle="users">
+                <span>Edit Users</span>
+            </label>
+        </div>
+    </div>
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Active</th>
+                    <th>Online</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_obj in users %}
+                    <tr
+                        class="admin-edit-row"
+                        data-edit-group="users"
+                        data-row-type="user"
+                        data-update-url="{% url 'admin_update_user' user_obj.id %}"
+                    >
+                        <td>{{ user_obj.id }}</td>
+                        <td>{{ user_obj.username }}</td>
+                        <td>
+                            <select data-field="role" {% if user_obj.is_superuser %}data-locked="1"{% endif %}>
+                                <option value="user" {% if not user_obj.is_staff and not user_obj.is_superuser %}selected{% endif %}>User</option>
+                                <option value="admin" {% if user_obj.is_staff or user_obj.is_superuser %}selected{% endif %}>Admin</option>
+                            </select>
+                        </td>
+                        <td>
+                            <label class="checkbox-line">
+                                <input type="checkbox" data-field="is_active" {% if user_obj.is_active %}checked{% endif %}>
+                            </label>
+                        </td>
+                        <td>
+                            <label class="checkbox-line">
+                                <input type="checkbox" data-field="is_online" {% if user_obj.presence.is_online %}checked{% endif %}>
+                            </label>
+                        </td>
+                        <td><span class="admin-row-status">Saved</span></td>
+                        <td>
+                            <button type="button" class="table-btn admin-action-on-edit admin-undo-btn">Undo</button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7">No users found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="tool-card">
+    <div class="section-header-row">
+        <h2>Post Moderation</h2>
+        <div class="section-header-actions">
+            <button type="button" class="table-btn admin-group-save-btn" data-admin-group-save="cards">Save</button>
+            <label class="toggle-line" for="cardsEditToggle">
+                <input type="checkbox" id="cardsEditToggle" data-admin-group-toggle="cards">
+                <span>Edit Posts</span>
+            </label>
+        </div>
+    </div>
+    <form method="get" class="filters-form admin-filters-form">
+        <input type="text" name="q" placeholder="Search title, description, category, or owner..." value="{{ card_filter_query }}">
+        <select name="author">
+            <option value="">All Authors</option>
+            {% for owner in card_owner_options %}
+                <option value="{{ owner.id }}" {% if card_filter_author == owner.id|stringformat:'s' %}selected{% endif %}>
+                    {{ owner.username }}
+                </option>
+            {% endfor %}
+            <option value="unassigned" {% if card_filter_author == 'unassigned' %}selected{% endif %}>Unassigned</option>
+        </select>
+        <button type="submit">Filter</button>
+        {% if card_filter_query or card_filter_author %}
+            <a href="{% url 'admin_center_page' %}" class="clear-link">Clear</a>
+        {% endif %}
+    </form>
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Owner</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Tags</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for card in cards %}
+                    <tr
+                        class="admin-edit-row"
+                        data-edit-group="cards"
+                        data-row-type="card"
+                        data-update-url="{% url 'admin_update_card' card.id %}"
+                        data-delete-url="{% url 'admin_delete_card' card.id %}"
+                    >
+                        <td>{{ card.id }}</td>
+                        <td>
+                            <select data-field="owner_id">
+                                <option value="">Unassigned</option>
+                                {% for owner in card_owner_options %}
+                                    <option value="{{ owner.id }}" {% if card.owner_id == owner.id %}selected{% endif %}>
+                                        {{ owner.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td><input type="text" data-field="title" value="{{ card.title }}"></td>
+                        <td><textarea data-field="description" rows="2">{{ card.description }}</textarea></td>
+                        <td><input type="text" data-field="category" value="{{ card.category }}"></td>
+                        <td><input type="text" data-field="tags" value="{% for tag in card.tags.all %}{% if not forloop.first %}, {% endif %}{{ tag.name }}{% endfor %}"></td>
+                        <td><span class="admin-row-status">Saved</span></td>
+                        <td class="admin-table-actions">
+                            <button type="button" class="table-btn admin-action-on-edit admin-undo-btn">Undo</button>
+                            <button type="button" class="table-btn danger admin-action-on-edit admin-delete-btn">Delete</button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8">No posts found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+</div>
+{% endblock %}
