@@ -39,3 +39,8 @@ Open: `http://127.0.0.1:8000/`
 ## Notes
 - Development server only (not for production).
 - Excludes `venv/` and local cache files via `.gitignore`.
+- users and passwords (if needed):
+   A / a1234567
+   B / b1234567
+   C / c1234567
+   D / d1234567
